@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora TEP 2026</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; line-height: 1.6; padding: 20px; background: #f4f7f9; color: #333; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #003366; border-bottom: 2px solid #eef; padding-bottom: 10px; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        label { display: block; margin: 10px 0 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #003366; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #002244; }
+        #results { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; }
+        .clase-E { background: #ffebee; border: 1px solid #f44336; }
+        .clase-D { background: #fff3e0; border: 1px solid #ff9800; }
+        .clase-ABC { background: #e3f2fd; border: 1px solid #2196f3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Calculadora TEP 2026</h2>
+    
+    <div class="section">
+        <h3>1. Diagnóstico (YEARS)</h3>
+        <label>Edad del paciente:</label>
+        <input type="number" id="age" placeholder="Años">
+        
+        <label>Dímero D (ng/mL):</label>
+        <input type="number" id="ddimer" placeholder="Ej: 750">
+        
+        <label><input type="checkbox" id="tvp"> Signos clínicos de TVP</label>
+        <label><input type="checkbox" id="hemoptisis"> Hemoptisis</label>
+        <label><input type="checkbox" id="probable"> ¿TEP es el diagnóstico más probable?</label>
+    </div>
+
+    <div class="section">
+        <h3>2. Gravedad (AHA/ACC 2026)</h3>
+        <label>¿Está hemodinámicamente estable?</label>
+        <select id="stable">
+            <option value="yes">Sí (TAS > 90 mmHg)</option>
+            <option value="no">No (TAS < 90 o Choque)</option>
+        </select>
+        
+        <label>Relación VD/VI (TAC o Eco):</label>
+        <input type="number" step="0.1" id="rvlv" placeholder="Ej: 1.1">
+        
+        <label><input type="checkbox" id="bio"> Biomarcadores positivos (Troponina/BNP)</label>
+    </div>
+
+    <button onclick="calculate()">Calcular Conducta</button>
+
+    <div id="results"></div>
+    <p style="font-size: 10px; color: #777; margin-top: 20px;">*Solo para uso educativo. Requiere juicio clínico.</p>
+</div>
+
+<script>
+function calculate() {
+    const age = parseInt(document.getElementById('age').value);
+    const ddimer = parseInt(document.getElementById('ddimer').value);
+    const years_score = (document.getElementById('tvp').checked ? 1 : 0) + 
+                        (document.getElementById('hemoptisis').checked ? 1 : 0) + 
+                        (document.getElementById('probable').checked ? 1 : 0);
+    const stable = document.getElementById('stable').value === 'yes';
+    const rvlv = parseFloat(document.getElementById('rvlv').value);
+    const bio = document.getElementById('bio').checked;
+
+    // Lógica YEARS
+    let threshold = years_score === 0 ? 1000 : Math.max(500, age > 50 ? age * 10 : 500);
+    let tac_needed = ddimer >= threshold;
+    let years_text = tac_needed ? "⚠️ Se requiere AngioTAC" : "✅ TEP Excluida por YEARS";
+
+    // Lógica Clasificación y Tratamiento
+    let clase = "";
+    let tx = "";
+    let style = "";
+
+    if (!stable) {
+        clase = "E (Riesgo Alto)";
+        tx = "EMERGENCIA: Reperfusión inmediata (Fibrinólisis sistémica o Trombectomía mecánica). Ingreso a UCI.";
+        style = "clase-E";
+    } else if (rvlv > 0.9 && bio) {
+        clase = "D (Intermedio-Alto)";
+        tx = "Vigilancia en UTI/Telemetría. Activar equipo PERT. Considerar Trombectomía mecánica.";
+        style = "clase-D";
+    } else if (rvlv > 0.9 && !bio) {
+        clase = "C (Intermedio-Bajo)";
+        tx = "Hospitalización en piso. Anticoagulación con HBPM o DOACs. Monitoreo de signos vitales.";
+        style = "clase-ABC";
+    } else if (rvlv <= 0.9 && bio) {
+        clase = "B (Riesgo Leve)";
+        tx = "Observación (<24h) para descartar progresión. Anticoagulación con DOACs.";
+        style = "clase-ABC";
+    } else {
+        clase = "A (Ambulatorio)";
+        tx = "Posibilidad de alta temprana o manejo domiciliario con DOACs (Apixabán/Rivaroxabán).";
+        style = "clase-ABC";
+    }
+
+    const resDiv = document.getElementById('results');
+    resDiv.style.display = 'block';
+    resDiv.className = style;
+    resDiv.innerHTML = `<strong>Diagnóstico:</strong> ${years_text}<br><br>
+                        <strong>Categoría AHA 2026:</strong> ${clase}<br><br>
+                        <strong>Recomendación:</strong> ${tx}`;
+}
+</script>
+</body>
+</html>
